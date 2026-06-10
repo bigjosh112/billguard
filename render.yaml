@@ -8,6 +8,7 @@ services:
     dockerContext: ./backend
     plan: free
     healthCheckPath: /health
+    # FastAPI must listen on Render's PORT (set in Dockerfile)
     envVars:
       - key: MONGODB_URI
         sync: false

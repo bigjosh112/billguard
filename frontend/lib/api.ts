@@ -1,6 +1,21 @@
 import { getSessionId } from "./session";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+function resolveApiUrl(): string {
+  const direct = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
+  const useProxy =
+    process.env.NEXT_PUBLIC_API_PROXY === "1" ||
+    (typeof window !== "undefined" &&
+      direct &&
+      !direct.includes("localhost") &&
+      window.location.hostname !== "localhost");
+
+  if (useProxy) {
+    return "/backend";
+  }
+  return direct || "http://localhost:8000";
+}
+
+const API_URL = resolveApiUrl();
 
 export interface Transaction {
   _id: string;
