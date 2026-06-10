@@ -42,6 +42,25 @@ export async function proxyToBackend(
     );
   }
 
+  const contentType = upstream.headers.get("content-type") || "";
+  if (contentType.includes("text/html")) {
+    const html = await upstream.text();
+    const isWrongApp =
+      html.includes("Cannot POST") ||
+      html.includes("Cannot GET") ||
+      upstream.status === 404;
+    return NextResponse.json(
+      {
+        detail: isWrongApp
+          ? "Render backend is the wrong app (not BillGuard FastAPI). " +
+            "Render dashboard → Blueprint Billguard → Manual Sync. " +
+            "Service must use Python runtime, rootDir=backend."
+          : `Backend returned HTML error (${upstream.status}). Check Render logs.`,
+      },
+      { status: 502 }
+    );
+  }
+
   const responseHeaders = new Headers();
   const upstreamType = upstream.headers.get("content-type");
   if (upstreamType) responseHeaders.set("Content-Type", upstreamType);

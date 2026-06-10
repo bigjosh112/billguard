@@ -9,6 +9,7 @@ import SalaryInput from "@/components/SalaryInput";
 import BillsPanel from "@/components/BillsPanel";
 import MobileNav, { MobileTab } from "@/components/MobileNav";
 import { ToastProvider } from "@/components/Toast";
+import BackendStatus from "@/components/BackendStatus";
 import { getSummary, FinancialSummary } from "@/lib/api";
 
 function PanelDivider() {
@@ -83,6 +84,7 @@ export default function Home() {
 
       {/* Desktop right panel */}
       <aside className="hidden lg:flex lg:flex-col lg:w-[360px] lg:shrink-0 lg:h-screen lg:sticky lg:top-0 border-l border-[var(--bg-border)] bg-[var(--bg-surface)] overflow-y-auto">
+        <BackendStatus />
         {dataSections}
         <PanelDivider />
         <BillsPanel refreshKey={refreshKey} onDataChanged={refresh} />
@@ -91,6 +93,7 @@ export default function Home() {
       {/* Mobile: Overview tab */}
       {mobileTab === "data" && (
         <div className="lg:hidden flex flex-col w-full overflow-y-auto pb-20 min-h-[calc(100dvh-64px)] border-t border-[var(--bg-border)] bg-[var(--bg-surface)]">
+          <BackendStatus />
           {dataSections}
         </div>
       )}
