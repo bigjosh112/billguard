@@ -32,18 +32,23 @@ Network Access → **Allow `0.0.0.0/0`**
 3. When prompted, paste from your `backend/.env`:
    - `MONGODB_URI`
    - `GEMINI_API_KEY`
-4. Wait ~5 min → copy URL e.g. `https://billguard-api.onrender.com`
+4. Wait ~5 min → copy URL from **Render dashboard → billguard-api → Settings → URL**  
+   (e.g. `https://billguard-api-gjxg.onrender.com` — **not** always `billguard-api.onrender.com`)
 
-Verify: `curl https://billguard-api.onrender.com/health`
+Verify:
+
+```bash
+curl https://YOUR-ACTUAL-RENDER-URL.onrender.com/health
+# Must show: "service": "BillGuard", "database": "connected"
+```
 
 > Free tier sleeps after 15 min idle — first load takes ~30s. Fine for Devpost judges.
 
 ### 3. Deploy frontend on Vercel
 
 1. **Vercel** → your `billguard` project → **Settings** → **Environment Variables**  
-2. Add (Production + Preview + Development):
-   - `NEXT_PUBLIC_API_URL` = `https://billguard-api.onrender.com` *(your Render URL, no trailing slash)*
-   - `NEXT_PUBLIC_API_PROXY` = `1`
+2. Add (Production):
+   - `BILLGUARD_API_URL` = your **actual** Render URL (from Render Settings → URL)
 3. **Deployments** → ⋯ on latest → **Redeploy** (required — env vars are baked in at build time)
 
 The frontend calls `/backend/api/...` on Vercel, which proxies to Render (no CORS issues).
