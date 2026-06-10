@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "app/backend/**/route.ts": {
+      "maxDuration": 120
+    }
+  }
+}

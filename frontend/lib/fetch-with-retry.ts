@@ -20,14 +20,14 @@ export async function fetchWithRetry(
       clearTimeout(timer);
       // Retry on 502/503/504 from our proxy (backend still waking)
       if (res.status >= 502 && res.status <= 504 && i < attempts - 1) {
-        await sleep(8000);
+        await sleep(10_000);
         continue;
       }
       return res;
     } catch (err) {
       clearTimeout(timer);
       lastError = err instanceof Error ? err : new Error("Request failed");
-      if (i < attempts - 1) await sleep(8000);
+      if (i < attempts - 1) await sleep(10_000);
     }
   }
 
@@ -47,19 +47,19 @@ export async function wakeBackend(
 
   onProgress?.("Starting server…");
 
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 4; i++) {
     try {
       const res = await fetchWithRetry("/backend/health", undefined, {
-        attempts: 2,
-        timeoutMs: 90_000,
-        onRetry: () => onProgress?.(`Waking server… (${i + 1}/6)`),
+        attempts: 1,
+        timeoutMs: 60_000,
       });
       const data = await res.json().catch(() => ({}));
       if (data.service === "BillGuard") return true;
+      onProgress?.(`Connecting… (${i + 1}/4)`);
     } catch {
-      onProgress?.(`Server starting… please wait (${i + 1}/6)`);
+      onProgress?.(`Starting server… (${i + 1}/4)`);
     }
-    await sleep(5000);
+    if (i < 3) await sleep(8000);
   }
   return false;
 }

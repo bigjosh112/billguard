@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, CloudUpload, FileText } from "lucide-react";
 import { uploadStatement } from "@/lib/api";
+import { wakeBackend } from "@/lib/fetch-with-retry";
 import { useToast } from "@/components/Toast";
 
 const UPLOAD_STAGES = [
@@ -75,6 +76,9 @@ export default function UploadStatement({ onUploaded }: UploadStatementProps) {
       runProgressStages();
 
       try {
+        setUploadStage("Connecting to server…");
+        await wakeBackend((msg) => setUploadStage(msg));
+
         const result = await uploadStatement(file, (n) => {
           setUploadStage(`Server waking up… retry ${n}/4`);
         });
@@ -105,6 +109,9 @@ export default function UploadStatement({ onUploaded }: UploadStatementProps) {
         setUploadStage("");
         setSelectedFile(null);
         setError(err instanceof Error ? err.message : "Upload failed");
+        if (err instanceof Error && err.message.toLowerCase().includes("waking")) {
+          setError("Server is starting up — wait 30 seconds and try again.");
+        }
       }
     },
     [onUploaded, runProgressStages, clearTimeouts, scheduleTimeout, showToast]
