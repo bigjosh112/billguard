@@ -1,14 +1,13 @@
-# Render Blueprint — deploy at https://dashboard.render.com/blueprints
-# Connect GitHub repo → New Blueprint → select this file
+# Render Blueprint — https://dashboard.render.com/blueprints
 services:
   - type: web
     name: billguard-api
-    runtime: docker
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
+    runtime: python
     plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
-    # FastAPI must listen on Render's PORT (set in Dockerfile)
     envVars:
       - key: MONGODB_URI
         sync: false
@@ -16,3 +15,5 @@ services:
         sync: false
       - key: ENVIRONMENT
         value: production
+      - key: PYTHON_VERSION
+        value: "3.11.0"

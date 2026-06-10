@@ -1,21 +1,9 @@
 import { getSessionId } from "./session";
+import { getClientApiUrl } from "./backend-url";
 
-function resolveApiUrl(): string {
-  const direct = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
-  const useProxy =
-    process.env.NEXT_PUBLIC_API_PROXY === "1" ||
-    (typeof window !== "undefined" &&
-      direct &&
-      !direct.includes("localhost") &&
-      window.location.hostname !== "localhost");
-
-  if (useProxy) {
-    return "/backend";
-  }
-  return direct || "http://localhost:8000";
+function apiUrl(): string {
+  return getClientApiUrl();
 }
-
-const API_URL = resolveApiUrl();
 
 export interface Transaction {
   _id: string;
@@ -92,14 +80,23 @@ export interface SalaryInput {
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: response.statusText }));
-    throw new Error(error.detail || "Request failed");
+    const text = await response.text();
+    try {
+      const error = JSON.parse(text) as { detail?: string; message?: string };
+      throw new Error(error.detail || error.message || "Request failed");
+    } catch (e) {
+      if (e instanceof Error && e.message !== "Request failed" && !e.message.startsWith("Unexpected")) {
+        throw e;
+      }
+      const snippet = text.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 180);
+      throw new Error(snippet || `Request failed (${response.status})`);
+    }
   }
   return response.json();
 }
 
 export async function checkHealth(): Promise<{ status: string; service: string }> {
-  const res = await fetch(`${API_URL}/health`);
+  const res = await fetch(`${apiUrl()}/health`);
   return handleResponse(res);
 }
 
@@ -111,7 +108,7 @@ export async function uploadStatement(file: File): Promise<{
   const formData = new FormData();
   formData.append("file", file);
   formData.append("session_id", getSessionId());
-  const res = await fetch(`${API_URL}/api/upload-statement`, {
+  const res = await fetch(`${apiUrl()}/api/upload-statement`, {
     method: "POST",
     body: formData,
   });
@@ -121,20 +118,20 @@ export async function uploadStatement(file: File): Promise<{
 export async function getBills(includePaid = false): Promise<{ bills: Bill[] }> {
   const params = new URLSearchParams({ session_id: getSessionId() });
   if (includePaid) params.set("include_paid", "true");
-  const res = await fetch(`${API_URL}/api/bills?${params}`);
+  const res = await fetch(`${apiUrl()}/api/bills?${params}`);
   return handleResponse(res);
 }
 
 export async function markBillPaid(billId: string): Promise<{ success: boolean }> {
   const res = await fetch(
-    `${API_URL}/api/bills/${billId}/paid?session_id=${getSessionId()}`,
+    `${apiUrl()}/api/bills/${billId}/paid?session_id=${getSessionId()}`,
     { method: "PATCH" }
   );
   return handleResponse(res);
 }
 
 export async function addBill(bill: BillInput): Promise<{ success: boolean; bill_id: string }> {
-  const res = await fetch(`${API_URL}/api/bills`, {
+  const res = await fetch(`${apiUrl()}/api/bills`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ currency: "NGN", session_id: getSessionId(), ...bill }),
@@ -144,14 +141,14 @@ export async function addBill(bill: BillInput): Promise<{ success: boolean; bill
 
 export async function deleteBill(billId: string): Promise<{ success: boolean }> {
   const res = await fetch(
-    `${API_URL}/api/bills/${billId}?session_id=${getSessionId()}`,
+    `${apiUrl()}/api/bills/${billId}?session_id=${getSessionId()}`,
     { method: "DELETE" }
   );
   return handleResponse(res);
 }
 
 export async function setSalary(salary: SalaryInput): Promise<{ success: boolean; message: string }> {
-  const res = await fetch(`${API_URL}/api/salary`, {
+  const res = await fetch(`${apiUrl()}/api/salary`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ currency: "NGN", session_id: getSessionId(), ...salary }),
@@ -160,7 +157,7 @@ export async function setSalary(salary: SalaryInput): Promise<{ success: boolean
 }
 
 export async function getSummary(): Promise<FinancialSummary> {
-  const res = await fetch(`${API_URL}/api/summary?session_id=${getSessionId()}`);
+  const res = await fetch(`${apiUrl()}/api/summary?session_id=${getSessionId()}`);
   return handleResponse(res);
 }
 
@@ -173,7 +170,7 @@ export async function getTransactions(
     session_id: getSessionId(),
   });
   if (category) params.set("category", category);
-  const res = await fetch(`${API_URL}/api/transactions?${params}`);
+  const res = await fetch(`${apiUrl()}/api/transactions?${params}`);
   return handleResponse(res);
 }
 
@@ -182,7 +179,7 @@ export async function streamChat(
   sessionId: string,
   onEvent: (event: ChatStreamEvent) => void
 ): Promise<void> {
-  const res = await fetch(`${API_URL}/api/chat`, {
+  const res = await fetch(`${apiUrl()}/api/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ message, session_id: sessionId }),
