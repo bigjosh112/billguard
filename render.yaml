@@ -1,0 +1,17 @@
+# Render Blueprint — deploy at https://dashboard.render.com/blueprints
+# Connect GitHub repo → New Blueprint → select this file
+services:
+  - type: web
+    name: billguard-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: ENVIRONMENT
+        value: production

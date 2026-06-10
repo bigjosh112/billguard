@@ -1,0 +1,257 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Backgrounds */
+  --bg-base: #080B14;
+  --bg-surface: #0F1524;
+  --bg-elevated: #162033;
+  --bg-border: #1E2D45;
+
+  /* Brand */
+  --brand: #00C896;
+  --brand-dim: #00C89620;
+  --brand-glow: #00C89640;
+  --brand-hover: #00E5AA;
+
+  /* Accents */
+  --accent-blue: #3B82F6;
+  --accent-purple: #8B5CF6;
+  --accent-amber: #F59E0B;
+  --accent-red: #EF4444;
+  --accent-emerald: #10B981;
+
+  /* Text */
+  --text-primary: #F0F4FF;
+  --text-secondary: #8899BB;
+  --text-muted: #4A5568;
+
+  /* Typography */
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --font-sans: 'Inter', system-ui, sans-serif;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+  }
+
+  input,
+  select,
+  textarea,
+  button {
+    font-family: inherit;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--bg-base);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--bg-border);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+  }
+}
+
+@layer utilities {
+  .font-mono {
+    font-family: var(--font-mono);
+  }
+
+  .font-sans {
+    font-family: var(--font-sans);
+  }
+
+  .label-caps {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .input-dark {
+    background: var(--bg-base);
+    border: 1px solid var(--bg-border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 200ms, box-shadow 200ms;
+  }
+
+  .input-dark:focus {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px var(--brand-glow);
+  }
+
+  .input-dark::placeholder {
+    color: var(--text-muted);
+  }
+
+  .section-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--bg-border);
+  }
+}
+
+/* Animations */
+@keyframes pulse-dot {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.4);
+    opacity: 0.6;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bounce-once {
+  0%, 100% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.15);
+  }
+  70% {
+    transform: scale(0.95);
+  }
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+.animate-spin-slow {
+  animation: spin 800ms linear infinite;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 200ms ease-out forwards;
+}
+
+.animate-page-enter {
+  animation: page-enter 400ms ease-out forwards;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-toast-in {
+  animation: toast-in 250ms ease-out forwards;
+}
+
+.animate-bounce-once {
+  animation: bounce-once 600ms ease-out forwards;
+}
+
+.stagger-1 { animation-delay: 0ms; }
+.stagger-2 { animation-delay: 80ms; }
+.stagger-3 { animation-delay: 160ms; }
+.stagger-4 { animation-delay: 240ms; }
+
+/* Markdown in agent messages */
+.agent-markdown p {
+  margin-bottom: 0.75rem;
+}
+
+.agent-markdown p:last-child {
+  margin-bottom: 0;
+}
+
+.agent-markdown ul,
+.agent-markdown ol {
+  margin: 0.5rem 0 0.75rem 1.25rem;
+}
+
+.agent-markdown li {
+  margin-bottom: 0.35rem;
+}
+
+.agent-markdown strong {
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.agent-markdown code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--bg-elevated);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--text-primary);
+}
+
+.agent-markdown h1,
+.agent-markdown h2,
+.agent-markdown h3 {
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  margin: 1rem 0 0.5rem;
+  color: var(--text-primary);
+}
+
+/* Date input dark mode */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.6);
+  cursor: pointer;
+}
