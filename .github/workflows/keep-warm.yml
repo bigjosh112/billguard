@@ -1,0 +1,17 @@
+name: Keep Render Warm
+
+# Prevents cold starts during hackathon judging (Render free tier sleeps after 15 min)
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping BillGuard API
+        run: |
+          curl -sf --max-time 120 \
+            "https://billguard-api-gjxg.onrender.com/health" \
+            | grep -q BillGuard && echo "✓ Backend awake"

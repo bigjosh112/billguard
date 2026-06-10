@@ -10,6 +10,7 @@ import BillsPanel from "@/components/BillsPanel";
 import MobileNav, { MobileTab } from "@/components/MobileNav";
 import { ToastProvider } from "@/components/Toast";
 import BackendStatus from "@/components/BackendStatus";
+import WakeBackend from "@/components/WakeBackend";
 import { getSummary, FinancialSummary } from "@/lib/api";
 
 function PanelDivider() {
@@ -51,6 +52,7 @@ export default function Home() {
 
   return (
     <ToastProvider>
+    <WakeBackend />
     <div className="min-h-screen bg-[var(--bg-base)] flex flex-col lg:flex-row">
       {/* Hackathon badge */}
       <div className="fixed top-3 right-3 z-50 hidden sm:block">

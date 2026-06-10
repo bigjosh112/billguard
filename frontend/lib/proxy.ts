@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getBackendUrl } from "./backend-url";
 
+// Vercel Hobby max is 60s — we retry within that window
+export const maxDuration = 60;
+
+async function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
 export async function proxyToBackend(
   request: NextRequest,
   backendPath: string
@@ -14,60 +21,64 @@ export async function proxyToBackend(
   const accept = request.headers.get("accept");
   if (accept) headers.set("Accept", accept);
 
-  const init: RequestInit = {
-    method: request.method,
-    headers,
-  };
+  const body =
+    request.method !== "GET" && request.method !== "HEAD"
+      ? await request.arrayBuffer()
+      : undefined;
 
-  if (request.method !== "GET" && request.method !== "HEAD") {
-    init.body = await request.arrayBuffer();
+  const attempts = 3;
+  let lastError: Error | null = null;
+
+  for (let i = 0; i < attempts; i++) {
+    if (i > 0) await sleep(6000);
+
+    const init: RequestInit = { method: request.method, headers };
+    if (body) init.body = body;
+
+    try {
+      const upstream = await fetch(url, {
+        ...init,
+        signal: AbortSignal.timeout(50_000),
+      });
+
+      const upstreamContentType = upstream.headers.get("content-type") || "";
+      if (upstreamContentType.includes("text/html")) {
+        const html = await upstream.text();
+        const isWrongApp =
+          html.includes("Cannot POST") ||
+          html.includes("Cannot GET") ||
+          upstream.status === 404;
+        return NextResponse.json(
+          {
+            detail: isWrongApp
+              ? "Render backend is the wrong app (not BillGuard FastAPI)."
+              : `Backend returned HTML error (${upstream.status}).`,
+          },
+          { status: 502 }
+        );
+      }
+
+      const responseHeaders = new Headers();
+      const upstreamType = upstream.headers.get("content-type");
+      if (upstreamType) responseHeaders.set("Content-Type", upstreamType);
+      responseHeaders.set("Cache-Control", "no-cache");
+
+      return new NextResponse(upstream.body, {
+        status: upstream.status,
+        headers: responseHeaders,
+      });
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error("Backend unreachable");
+    }
   }
 
-  let upstream: Response;
-  try {
-    upstream = await fetch(url, {
-      ...init,
-      // Render free tier can take 30s+ to wake up
-      signal: AbortSignal.timeout(120_000),
-    });
-  } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Backend unreachable";
-    return NextResponse.json(
-      {
-        detail: `Cannot reach backend at ${backend}. ${message}. ` +
-          "If Render was sleeping, wait 30s and try again.",
-      },
-      { status: 502 }
-    );
-  }
-
-  const upstreamContentType = upstream.headers.get("content-type") || "";
-  if (upstreamContentType.includes("text/html")) {
-    const html = await upstream.text();
-    const isWrongApp =
-      html.includes("Cannot POST") ||
-      html.includes("Cannot GET") ||
-      upstream.status === 404;
-    return NextResponse.json(
-      {
-        detail: isWrongApp
-          ? "Render backend is the wrong app (not BillGuard FastAPI). " +
-            "Render dashboard → Blueprint Billguard → Manual Sync. " +
-            "Service must use Python runtime, rootDir=backend."
-          : `Backend returned HTML error (${upstream.status}). Check Render logs.`,
-      },
-      { status: 502 }
-    );
-  }
-
-  const responseHeaders = new Headers();
-  const upstreamType = upstream.headers.get("content-type");
-  if (upstreamType) responseHeaders.set("Content-Type", upstreamType);
-  responseHeaders.set("Cache-Control", "no-cache");
-
-  return new NextResponse(upstream.body, {
-    status: upstream.status,
-    headers: responseHeaders,
-  });
+  return NextResponse.json(
+    {
+      detail:
+        "Server is waking up (Render free tier). Wait 30 seconds and try again — " +
+        "or refresh the page.",
+      waking: true,
+    },
+    { status: 503 }
+  );
 }

@@ -1,5 +1,6 @@
 import { getSessionId } from "./session";
 import { getClientApiUrl } from "./backend-url";
+import { fetchWithRetry } from "./fetch-with-retry";
 
 function apiUrl(): string {
   return getClientApiUrl();
@@ -96,11 +97,14 @@ async function handleResponse<T>(response: Response): Promise<T> {
 }
 
 export async function checkHealth(): Promise<{ status: string; service: string }> {
-  const res = await fetch(`${apiUrl()}/health`);
+  const res = await fetchWithRetry(`${apiUrl()}/health`);
   return handleResponse(res);
 }
 
-export async function uploadStatement(file: File): Promise<{
+export async function uploadStatement(
+  file: File,
+  onRetry?: (attempt: number) => void
+): Promise<{
   success: boolean;
   transactions_imported: number;
   message: string;
@@ -108,22 +112,22 @@ export async function uploadStatement(file: File): Promise<{
   const formData = new FormData();
   formData.append("file", file);
   formData.append("session_id", getSessionId());
-  const res = await fetch(`${apiUrl()}/api/upload-statement`, {
+  const res = await fetchWithRetry(`${apiUrl()}/api/upload-statement`, {
     method: "POST",
     body: formData,
-  });
+  }, { attempts: 4, timeoutMs: 90_000, onRetry });
   return handleResponse(res);
 }
 
 export async function getBills(includePaid = false): Promise<{ bills: Bill[] }> {
   const params = new URLSearchParams({ session_id: getSessionId() });
   if (includePaid) params.set("include_paid", "true");
-  const res = await fetch(`${apiUrl()}/api/bills?${params}`);
+  const res = await fetchWithRetry(`${apiUrl()}/api/bills?${params}`);
   return handleResponse(res);
 }
 
 export async function markBillPaid(billId: string): Promise<{ success: boolean }> {
-  const res = await fetch(
+  const res = await fetchWithRetry(
     `${apiUrl()}/api/bills/${billId}/paid?session_id=${getSessionId()}`,
     { method: "PATCH" }
   );
@@ -131,7 +135,7 @@ export async function markBillPaid(billId: string): Promise<{ success: boolean }
 }
 
 export async function addBill(bill: BillInput): Promise<{ success: boolean; bill_id: string }> {
-  const res = await fetch(`${apiUrl()}/api/bills`, {
+  const res = await fetchWithRetry(`${apiUrl()}/api/bills`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ currency: "NGN", session_id: getSessionId(), ...bill }),
@@ -140,7 +144,7 @@ export async function addBill(bill: BillInput): Promise<{ success: boolean; bill
 }
 
 export async function deleteBill(billId: string): Promise<{ success: boolean }> {
-  const res = await fetch(
+  const res = await fetchWithRetry(
     `${apiUrl()}/api/bills/${billId}?session_id=${getSessionId()}`,
     { method: "DELETE" }
   );
@@ -148,7 +152,7 @@ export async function deleteBill(billId: string): Promise<{ success: boolean }> 
 }
 
 export async function setSalary(salary: SalaryInput): Promise<{ success: boolean; message: string }> {
-  const res = await fetch(`${apiUrl()}/api/salary`, {
+  const res = await fetchWithRetry(`${apiUrl()}/api/salary`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ currency: "NGN", session_id: getSessionId(), ...salary }),
@@ -157,7 +161,7 @@ export async function setSalary(salary: SalaryInput): Promise<{ success: boolean
 }
 
 export async function getSummary(): Promise<FinancialSummary> {
-  const res = await fetch(`${apiUrl()}/api/summary?session_id=${getSessionId()}`);
+  const res = await fetchWithRetry(`${apiUrl()}/api/summary?session_id=${getSessionId()}`);
   return handleResponse(res);
 }
 
@@ -170,7 +174,7 @@ export async function getTransactions(
     session_id: getSessionId(),
   });
   if (category) params.set("category", category);
-  const res = await fetch(`${apiUrl()}/api/transactions?${params}`);
+  const res = await fetchWithRetry(`${apiUrl()}/api/transactions?${params}`);
   return handleResponse(res);
 }
 
@@ -179,11 +183,11 @@ export async function streamChat(
   sessionId: string,
   onEvent: (event: ChatStreamEvent) => void
 ): Promise<void> {
-  const res = await fetch(`${apiUrl()}/api/chat`, {
+  const res = await fetchWithRetry(`${apiUrl()}/api/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ message, session_id: sessionId }),
-  });
+  }, { attempts: 4, timeoutMs: 90_000 });
 
   if (!res.ok) {
     throw new Error("Chat request failed");

@@ -75,7 +75,9 @@ export default function UploadStatement({ onUploaded }: UploadStatementProps) {
       runProgressStages();
 
       try {
-        const result = await uploadStatement(file);
+        const result = await uploadStatement(file, (n) => {
+          setUploadStage(`Server waking up… retry ${n}/4`);
+        });
         setUploadProgress(100);
         setUploadStage("Done!");
 

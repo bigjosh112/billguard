@@ -246,4 +246,34 @@ User → Vercel (Next.js)
 
 ---
 
-*Good luck at the hackathon! 🛡️*
+## Keep backend awake for judges (important)
+
+Render **free tier sleeps after 15 minutes**. Three layers prevent cold-start timeouts:
+
+### 1. Automatic keep-alive (already set up)
+GitHub Action pings your API **every 10 minutes**:
+`.github/workflows/keep-warm.yml`
+
+Check it runs: GitHub repo → **Actions** → "Keep Render Warm" → enable if paused.
+
+### 2. Wake on page load
+When a judge opens the site, a **"Starting server…"** banner appears while the backend wakes (up to ~60s). No action needed.
+
+### 3. Before your live demo
+Open **https://billguard-six.vercel.app** 1–2 minutes before presenting.  
+Or run:
+```bash
+curl https://billguard-api-gjxg.onrender.com/health
+```
+
+### Optional: Render paid ($7/mo)
+Render → billguard-api → **Upgrade to Starter** = always on, zero cold starts.
+
+### Devpost demo tip
+Tell judges to use **demo mode** (no upload needed):
+```javascript
+localStorage.setItem('billguard_session_id', 'demo_session');
+location.reload();
+```
+
+---

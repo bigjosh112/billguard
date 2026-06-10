@@ -1,6 +1,8 @@
 import { NextRequest } from "next/server";
 import { proxyToBackend } from "@/lib/proxy";
 
+export const maxDuration = 60;
+
 type RouteContext = { params: Promise<{ path: string[] }> };
 
 async function handler(request: NextRequest, context: RouteContext) {
