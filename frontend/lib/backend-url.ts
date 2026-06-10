@@ -3,7 +3,7 @@ export function getBackendUrl(): string {
   return (
     process.env.BILLGUARD_API_URL ||
     process.env.NEXT_PUBLIC_API_URL ||
-    "https://billguard-api.onrender.com"
+    "https://billguard-api-gjxg.onrender.com"
   ).replace(/\/$/, "");
 }
 
