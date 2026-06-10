@@ -12,19 +12,9 @@
 
 ---
 
-## Step 0: Push to GitHub (required for Vercel + Render)
+## Step 0: GitHub ✅ DONE
 
-BillGuard needs its own repo (not your home folder).
-
-```bash
-cd /Users/dayo/billguard
-chmod +x scripts/setup-github.sh
-./scripts/setup-github.sh billguard YOUR_GITHUB_USERNAME
-```
-
-1. Create **https://github.com/new** → name: `billguard` → Public  
-2. `git remote add origin https://github.com/YOUR_USER/billguard.git`  
-3. `git push -u origin main`
+**Repo:** https://github.com/bigjosh112/billguard
 
 ---
 
@@ -35,13 +25,14 @@ Network Access → **Allow `0.0.0.0/0`**
 
 ### 2. Deploy API on Render
 
-1. **https://dashboard.render.com** → Sign up with GitHub  
-2. **New +** → **Blueprint** → connect `billguard` repo  
-3. Render reads `render.yaml` automatically  
-4. When prompted, set env vars:
-   - `MONGODB_URI` — from `backend/.env`
-   - `GEMINI_API_KEY` — from `backend/.env`
-5. Deploy → copy URL e.g. `https://billguard-api.onrender.com`
+**One-click:** https://dashboard.render.com/blueprint/new?repo=https://github.com/bigjosh112/billguard
+
+1. Sign in with GitHub → approve access to `billguard` repo  
+2. Render reads `render.yaml` → click **Apply**  
+3. When prompted, paste from your `backend/.env`:
+   - `MONGODB_URI`
+   - `GEMINI_API_KEY`
+4. Wait ~5 min → copy URL e.g. `https://billguard-api.onrender.com`
 
 Verify: `curl https://billguard-api.onrender.com/health`
 
@@ -49,11 +40,14 @@ Verify: `curl https://billguard-api.onrender.com/health`
 
 ### 3. Deploy frontend on Vercel
 
-1. **https://vercel.com/new** → Import `billguard` repo  
-2. **Root Directory:** `frontend`  
-3. **Environment variable:**  
-   `NEXT_PUBLIC_API_URL` = `https://billguard-api.onrender.com` (your Render URL)  
-4. Deploy → copy `https://billguard-xxx.vercel.app`
+**One-click:** https://vercel.com/new/clone?repository-url=https://github.com/bigjosh112/billguard
+
+1. Import repo (you're logged in as Vercel user)  
+2. **Root Directory:** click Edit → set to `frontend`  
+3. **Environment Variables** → add:
+   - Name: `NEXT_PUBLIC_API_URL`
+   - Value: your Render URL (e.g. `https://billguard-api.onrender.com`) — **no trailing slash**
+4. Deploy → copy live URL e.g. `https://billguard.vercel.app`
 
 ### 4. Seed demo data
 

@@ -49,8 +49,8 @@ MongoDB isn't just storage — it's the agent's memory. Remove it and the agent 
 
 | Field | Value |
 |-------|--------|
-| **Live demo** | `https://YOUR-VERCEL-URL.vercel.app` |
-| **GitHub** | `https://github.com/YOUR-USER/billguard` |
+| **Live demo** | `https://YOUR-VERCEL-URL.vercel.app` *(fill after Vercel deploy)* |
+| **GitHub** | https://github.com/bigjosh112/billguard |
 | **Video demo** | (record 2–3 min Loom/YouTube) |
 
 ## Demo script for video (2 min)
