@@ -9,8 +9,8 @@ export async function proxyToBackend(
   const url = `${backend}${backendPath}${request.nextUrl.search}`;
 
   const headers = new Headers();
-  const contentType = request.headers.get("content-type");
-  if (contentType) headers.set("Content-Type", contentType);
+  const requestContentType = request.headers.get("content-type");
+  if (requestContentType) headers.set("Content-Type", requestContentType);
   const accept = request.headers.get("accept");
   if (accept) headers.set("Accept", accept);
 
@@ -42,8 +42,8 @@ export async function proxyToBackend(
     );
   }
 
-  const contentType = upstream.headers.get("content-type") || "";
-  if (contentType.includes("text/html")) {
+  const upstreamContentType = upstream.headers.get("content-type") || "";
+  if (upstreamContentType.includes("text/html")) {
     const html = await upstream.text();
     const isWrongApp =
       html.includes("Cannot POST") ||
