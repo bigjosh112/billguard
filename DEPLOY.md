@@ -40,14 +40,20 @@ Verify: `curl https://billguard-api.onrender.com/health`
 
 ### 3. Deploy frontend on Vercel
 
-**One-click:** https://vercel.com/new/clone?repository-url=https://github.com/bigjosh112/billguard
+1. **Vercel** → your `billguard` project → **Settings** → **Environment Variables**  
+2. Add (Production + Preview + Development):
+   - `NEXT_PUBLIC_API_URL` = `https://billguard-api.onrender.com` *(your Render URL, no trailing slash)*
+   - `NEXT_PUBLIC_API_PROXY` = `1`
+3. **Deployments** → ⋯ on latest → **Redeploy** (required — env vars are baked in at build time)
 
-1. Import repo (you're logged in as Vercel user)  
-2. **Root Directory:** click Edit → set to `frontend`  
-3. **Environment Variables** → add:
-   - Name: `NEXT_PUBLIC_API_URL`
-   - Value: your Render URL (e.g. `https://billguard-api.onrender.com`) — **no trailing slash**
-4. Deploy → copy live URL e.g. `https://billguard.vercel.app`
+The frontend calls `/backend/api/...` on Vercel, which proxies to Render (no CORS issues).
+
+**Verify backend is FastAPI** (not Express):
+```bash
+curl https://billguard-api.onrender.com/health
+# Must show: "service": "BillGuard", "database": "connected"
+```
+If you see only `{"status":"ok"}` or `Cannot POST /api/...`, your Render service is wrong — see **Render fix** below.
 
 ### 4. Seed demo data
 
@@ -182,6 +188,23 @@ chmod +x scripts/deploy-frontend.sh
 ---
 
 ## Troubleshooting
+
+### Render backend returns `Cannot POST /api/...` (Express error)
+
+Your Render service is **not running the FastAPI Docker image**. Fix:
+
+1. Render dashboard → **billguard-api** → **Settings**
+2. Confirm **Runtime: Docker** and Dockerfile path = `backend/Dockerfile`, root = `backend`
+3. If it says Node/Python native → **delete service** and redeploy via Blueprint:  
+   https://dashboard.render.com/blueprint/new?repo=https://github.com/bigjosh112/billguard
+4. After deploy, `curl .../health` must return `"service": "BillGuard"`
+
+### `Failed to fetch` on Vercel
+
+1. Set `NEXT_PUBLIC_API_URL` on Vercel to your Render URL
+2. Set `NEXT_PUBLIC_API_PROXY=1`
+3. **Redeploy** Vercel (env vars only apply after rebuild)
+4. Render free tier sleeps — first request after idle takes ~30s
 
 ### `MongoDB startup failed` / DNS timeout locally
 
