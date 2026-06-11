@@ -25,19 +25,17 @@ Network Access → **Allow `0.0.0.0/0`**
 
 1. [railway.com](https://railway.com) → **New Project** → **Deploy from GitHub repo**
 2. Select **`bigjosh112/billguard`**
-3. **Service Settings:**
-   - **Root Directory:** `backend`
-   - **Start Command:** `uvicorn main:app --host 0.0.0.0 --port $PORT`
+3. Click your **service** → **Settings**:
+   - **Root Directory:** `backend` ← **required**
+   - **Builder:** Dockerfile (uses `backend/Dockerfile` + `start.sh`)
    - **Healthcheck Path:** `/health`
-4. Railway reads [`backend/railway.toml`](backend/railway.toml) automatically
-5. **Variables** — on the **service** (not project), click **Variables** tab, paste from `backend/.env`:
+4. **Variables** tab on the **service** (not project):
    - `MONGODB_URI`
    - `GEMINI_API_KEY`
    - `ENVIRONMENT=production`
 
-   > If healthcheck fails, you likely forgot these. The app needs `MONGODB_URI` to connect to Atlas.
-6. **Settings → Networking → Generate Domain** → copy URL  
-   (e.g. `https://billguard-api-production.up.railway.app`)
+   > **Healthcheck failing?** Root Directory must be `backend`, and `MONGODB_URI` must be set.
+5. **Networking → Generate Domain** → copy URL
 
 Verify:
 

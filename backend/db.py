@@ -20,8 +20,8 @@ class MongoDBClient:
     def __init__(self):
         self.client = AsyncIOMotorClient(
             MONGO_URI,
-            serverSelectionTimeoutMS=10_000,
-            connectTimeoutMS=10_000,
+            serverSelectionTimeoutMS=5_000,
+            connectTimeoutMS=5_000,
             socketTimeoutMS=30_000,
         )
         self.db = self.client[DB_NAME]

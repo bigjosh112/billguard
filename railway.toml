@@ -1,0 +1,2 @@
+# Monorepo pointer — Railway service Root Directory must be set to `backend`
+# See backend/railway.toml for deploy config

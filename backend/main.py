@@ -44,7 +44,7 @@ async def lifespan(app: FastAPI):
         db_client = None
         agent = None
         logger.warning(
-            "Starting in degraded mode — set MONGODB_URI on Railway and redeploy."
+            "Starting in degraded mode — set MONGODB_URI on Railway Variables and redeploy."
         )
     yield
 
