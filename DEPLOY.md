@@ -30,10 +30,12 @@ Network Access → **Allow `0.0.0.0/0`**
    - **Start Command:** `uvicorn main:app --host 0.0.0.0 --port $PORT`
    - **Healthcheck Path:** `/health`
 4. Railway reads [`backend/railway.toml`](backend/railway.toml) automatically
-5. **Variables** (paste from `backend/.env`):
+5. **Variables** — on the **service** (not project), click **Variables** tab, paste from `backend/.env`:
    - `MONGODB_URI`
    - `GEMINI_API_KEY`
    - `ENVIRONMENT=production`
+
+   > If healthcheck fails, you likely forgot these. The app needs `MONGODB_URI` to connect to Atlas.
 6. **Settings → Networking → Generate Domain** → copy URL  
    (e.g. `https://billguard-api-production.up.railway.app`)
 

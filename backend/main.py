@@ -38,13 +38,14 @@ async def lifespan(app: FastAPI):
         await db_client.create_indexes()
         await db_client.ping()
         logger.info("MongoDB connected")
+        agent = BillGuardAgent(db_client)
     except Exception as exc:
         logger.error("MongoDB startup failed: %s", exc)
-        raise RuntimeError(
-            "Cannot connect to MongoDB. Check MONGODB_URI and Atlas Network Access "
-            "(allow 0.0.0.0/0 for Railway/Vercel)."
-        ) from exc
-    agent = BillGuardAgent(db_client)
+        db_client = None
+        agent = None
+        logger.warning(
+            "Starting in degraded mode — set MONGODB_URI on Railway and redeploy."
+        )
     yield
 
 
@@ -80,6 +81,17 @@ class SalaryInfo(BaseModel):
     session_id: str = "default"
 
 
+def _require_db():
+    if db_client is None:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Database not connected. Add MONGODB_URI in Railway service Variables "
+                "and redeploy."
+            ),
+        )
+
+
 @app.get("/health")
 async def health():
     db_ok = False
@@ -97,12 +109,18 @@ async def health():
     }
 
 
+@app.get("/")
+async def root():
+    return {"service": "BillGuard API", "health": "/health"}
+
+
 @app.post("/api/upload-statement")
 async def upload_statement(
     file: UploadFile = File(...),
     session_id: str = Form(default="default"),
 ):
     """Accept a CSV bank statement, parse, and store transactions in MongoDB."""
+    _require_db()
     if not file.filename or not file.filename.endswith(".csv"):
         raise HTTPException(status_code=400, detail="Only CSV files are supported")
 
@@ -145,6 +163,7 @@ async def upload_statement(
 @app.post("/api/bills")
 async def add_bill(bill: BillEntry):
     """Add an upcoming bill for the agent to factor in."""
+    _require_db()
     result = await db_client.store_bill(bill.model_dump(), bill.session_id)
     return {"success": True, "bill_id": result}
 
@@ -152,18 +171,21 @@ async def add_bill(bill: BillEntry):
 @app.get("/api/bills")
 async def get_bills(session_id: str = "default", include_paid: bool = False):
     """Get bills. By default only unpaid; set include_paid=true for all."""
+    _require_db()
     bills = await db_client.get_bills(include_paid=include_paid, session_id=session_id)
     return {"bills": bills}
 
 
 @app.patch("/api/bills/{bill_id}/paid")
 async def mark_bill_paid(bill_id: str, session_id: str = "default"):
+    _require_db()
     await db_client.mark_bill_paid(bill_id, session_id)
     return {"success": True}
 
 
 @app.delete("/api/bills/{bill_id}")
 async def delete_bill(bill_id: str, session_id: str = "default"):
+    _require_db()
     await db_client.delete_bill(bill_id, session_id)
     return {"success": True}
 
@@ -171,6 +193,7 @@ async def delete_bill(bill_id: str, session_id: str = "default"):
 @app.post("/api/salary")
 async def set_salary(salary: SalaryInfo):
     """Set salary information for forecasting."""
+    _require_db()
     await db_client.store_salary(salary.model_dump(), salary.session_id)
     return {"success": True, "message": "Salary info saved"}
 
@@ -178,6 +201,11 @@ async def set_salary(salary: SalaryInfo):
 @app.post("/api/chat")
 async def chat(body: ChatMessage):
     """Stream agent reasoning and response via Server-Sent Events."""
+    if agent is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Agent unavailable — check MONGODB_URI and GEMINI_API_KEY on Railway.",
+        )
 
     async def stream_response():
         try:
@@ -200,6 +228,7 @@ async def chat(body: ChatMessage):
 @app.get("/api/summary")
 async def get_summary(session_id: str = "default"):
     """Get a quick financial summary without the full agent."""
+    _require_db()
     summary = await db_client.get_financial_summary(session_id=session_id)
     return summary
 
@@ -211,6 +240,7 @@ async def get_transactions(
     category: Optional[str] = None,
 ):
     """Get stored transactions, optionally filtered by category."""
+    _require_db()
     txns = await db_client.get_transactions(
         limit=limit, category=category, session_id=session_id
     )
