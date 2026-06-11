@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { wakeBackend } from "@/lib/fetch-with-retry";
 
-/** Wake Render on page load so judges don't hit cold-start on first action. */
+/** Wake backend on page load so judges don't hit cold-start on first action. */
 export default function WakeBackend() {
   const [message, setMessage] = useState<string | null>(null);
   const [ready, setReady] = useState(false);

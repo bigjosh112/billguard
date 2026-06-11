@@ -1,6 +1,7 @@
-name: Keep Render Warm
+name: Keep Backend Warm
 
-# Prevents cold starts during hackathon judging (Render free tier sleeps after 15 min)
+# Pings Railway API every 10 min to reduce cold starts during hackathon judging.
+# Set repo variable: Settings → Secrets and variables → Actions → BILLGUARD_API_URL
 on:
   schedule:
     - cron: "*/10 * * * *"
@@ -11,7 +12,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping BillGuard API
+        env:
+          API_URL: ${{ vars.BILLGUARD_API_URL }}
         run: |
-          curl -sf --max-time 120 \
-            "https://billguard-api-gjxg.onrender.com/health" \
-            | grep -q BillGuard && echo "✓ Backend awake"
+          if [ -z "$API_URL" ]; then
+            echo "Set BILLGUARD_API_URL in repo Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+          curl -sf --max-time 120 "${API_URL}/health" | grep -q BillGuard && echo "✓ Backend awake"

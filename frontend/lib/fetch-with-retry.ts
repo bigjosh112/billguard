@@ -1,4 +1,4 @@
-/** Retry fetch when Render free tier is cold-starting (can take 30–90s). */
+/** Retry fetch when backend is cold-starting (can take 30–90s). */
 export async function fetchWithRetry(
   url: string,
   init?: RequestInit,

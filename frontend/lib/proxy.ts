@@ -7,6 +7,15 @@ export async function proxyToBackend(
   backendPath: string
 ): Promise<NextResponse> {
   const backend = getBackendUrl();
+  if (!backend) {
+    return NextResponse.json(
+      {
+        detail:
+          "BILLGUARD_API_URL not set on Vercel. Add your Railway URL in Environment Variables.",
+      },
+      { status: 503 }
+    );
+  }
   const url = `${backend}${backendPath}${request.nextUrl.search}`;
 
   const headers = new Headers();
@@ -31,7 +40,7 @@ export async function proxyToBackend(
     if (upstreamContentType.includes("text/html")) {
       return NextResponse.json(
         {
-          detail: "Backend returned an error page. Check Render logs.",
+          detail: "Backend returned an error page. Check Railway deployment logs.",
           waking: true,
         },
         { status: 502 }

@@ -110,27 +110,13 @@ Then open http://localhost:3000
 
 ## Hosting for the Hackathon
 
-Deploy to production in ~20 minutes:
+- **Backend** → [Railway](https://railway.com) (GitHub auto-deploy from `backend/`)
+- **Frontend** → [Vercel](https://vercel.com) — https://billguard-six.vercel.app
+- **Database** → MongoDB Atlas
 
-- **Backend** → Google Cloud Run (Dockerfile included)
-- **Frontend** → Vercel
-- **Database** → MongoDB Atlas (already set up)
+Full guide: **[DEPLOY.md](./DEPLOY.md)**
 
-Full step-by-step guide: **[DEPLOY.md](./DEPLOY.md)**
-
-Quick deploy:
-
-```bash
-export GCP_PROJECT_ID=your-project
-export MONGODB_URI="mongodb+srv://..."
-export GEMINI_API_KEY="your-key"
-./scripts/deploy-backend.sh
-
-export NEXT_PUBLIC_API_URL=https://your-cloud-run-url.run.app
-./scripts/deploy-frontend.sh
-```
-
-**Important:** In MongoDB Atlas → Network Access, allow `0.0.0.0/0` so Cloud Run can connect.
+After Railway deploy, set **`BILLGUARD_API_URL`** on Vercel to your Railway domain.
 
 ---
 

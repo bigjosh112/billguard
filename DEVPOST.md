@@ -22,7 +22,7 @@ Every month, millions of Nigerian professionals face the same stress: salary lan
 ## How we built it
 - **Gemini 2.0 Flash** — agent reasoning and natural language
 - **MongoDB Atlas** — transactions, bills, salary, sessions (agent memory via tools)
-- **FastAPI** on **Google Cloud Run** — streaming SSE chat API
+- **FastAPI** on **Railway** — streaming SSE chat API
 - **Next.js 15** on **Vercel** — real-time agent UI with reasoning steps
 
 ## Challenges we ran into
@@ -49,8 +49,9 @@ MongoDB isn't just storage — it's the agent's memory. Remove it and the agent 
 
 | Field | Value |
 |-------|--------|
-| **Live demo** | `https://YOUR-VERCEL-URL.vercel.app` *(fill after Vercel deploy)* |
+| **Live demo** | https://billguard-six.vercel.app |
 | **GitHub** | https://github.com/bigjosh112/billguard |
+| **Backend** | Railway (URL in Vercel `BILLGUARD_API_URL`) |
 | **Video demo** | (record 2–3 min Loom/YouTube) |
 
 ## Demo script for video (2 min)
@@ -63,4 +64,4 @@ MongoDB isn't just storage — it's the agent's memory. Remove it and the agent 
 6. Ask: *"Draft a message to my landlord"* → show negotiation draft
 
 ## Technologies (for Devpost tags)
-`Python` `FastAPI` `Next.js` `MongoDB` `Google Gemini` `Google Cloud Run` `Vercel` `AI Agents`
+`Python` `FastAPI` `Next.js` `MongoDB` `Google Gemini` `Railway` `Vercel` `AI Agents`

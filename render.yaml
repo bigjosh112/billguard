@@ -1,4 +1,5 @@
-# Render Blueprint — https://dashboard.render.com/blueprints
+# Legacy Render Blueprint — use Railway instead (see DEPLOY.md)
+# https://dashboard.render.com/blueprints
 services:
   - type: web
     name: billguard-api

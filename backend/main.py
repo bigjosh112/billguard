@@ -42,7 +42,7 @@ async def lifespan(app: FastAPI):
         logger.error("MongoDB startup failed: %s", exc)
         raise RuntimeError(
             "Cannot connect to MongoDB. Check MONGODB_URI and Atlas Network Access "
-            "(allow 0.0.0.0/0 for Cloud Run)."
+            "(allow 0.0.0.0/0 for Railway/Vercel)."
         ) from exc
     agent = BillGuardAgent(db_client)
     yield

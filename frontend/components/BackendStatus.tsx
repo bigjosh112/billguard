@@ -23,16 +23,16 @@ export default function BackendStatus() {
         }
         if (data.service === "BillGuard") {
           setStatus("wrong");
-          setDetail("MongoDB not connected — check MONGODB_URI on Render.");
+          setDetail("MongoDB not connected — check MONGODB_URI on Railway.");
           return;
         }
         setStatus("wrong");
         setDetail(
-          "Render is running the wrong app. Blueprint → Manual Sync (Python, rootDir=backend)."
+          "Backend misconfigured — check Railway service (rootDir=backend, startCommand=uvicorn)."
         );
       } catch {
         setStatus("offline");
-        setDetail("Backend unreachable. Render free tier may be waking up — wait 30s.");
+        setDetail("Backend unreachable — server may be waking up. Wait 30s and refresh.");
       }
     })();
   }, []);

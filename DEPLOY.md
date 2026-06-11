@@ -1,279 +1,177 @@
 # Deploy BillGuard for Devpost
 
-**Fastest path (no GCP billing):** Render backend + Vercel frontend — ~15 min  
-**Hackathon path (GCP track):** Cloud Run + Vercel — requires [billing on GCP](https://console.cloud.google.com/billing) (free tier, ~$0 for demo traffic)
+**Recommended stack:** Railway backend + Vercel frontend + MongoDB Atlas + Gemini
 
 | Layer | Service | Cost |
 |-------|---------|------|
-| Backend | **Render** or **Cloud Run** | Free |
+| Backend | **Railway** | Free tier / trial credits |
 | Frontend | **Vercel** | Free |
 | Database | **MongoDB Atlas M0** | Free |
 | AI | **Gemini API** | Free |
 
----
-
-## Step 0: GitHub ✅ DONE
-
-**Repo:** https://github.com/bigjosh112/billguard
+**Live URLs:**
+- Frontend: https://billguard-six.vercel.app
+- GitHub: https://github.com/bigjosh112/billguard
 
 ---
 
-## Path A: Render backend (no GCP billing) ⭐ fastest
+## Path A: Railway backend (recommended)
 
 ### 1. MongoDB Atlas
+
 Network Access → **Allow `0.0.0.0/0`**
 
-### 2. Deploy API on Render
+### 2. Deploy API on Railway
 
-**One-click:** https://dashboard.render.com/blueprint/new?repo=https://github.com/bigjosh112/billguard
-
-1. Sign in with GitHub → approve access to `billguard` repo  
-2. Render reads `render.yaml` → click **Apply**  
-3. When prompted, paste from your `backend/.env`:
+1. [railway.com](https://railway.com) → **New Project** → **Deploy from GitHub repo**
+2. Select **`bigjosh112/billguard`**
+3. **Service Settings:**
+   - **Root Directory:** `backend`
+   - **Start Command:** `uvicorn main:app --host 0.0.0.0 --port $PORT`
+   - **Healthcheck Path:** `/health`
+4. Railway reads [`backend/railway.toml`](backend/railway.toml) automatically
+5. **Variables** (paste from `backend/.env`):
    - `MONGODB_URI`
    - `GEMINI_API_KEY`
-4. Wait ~5 min → copy URL from **Render dashboard → billguard-api → Settings → URL**  
-   (e.g. `https://billguard-api-gjxg.onrender.com` — **not** always `billguard-api.onrender.com`)
+   - `ENVIRONMENT=production`
+6. **Settings → Networking → Generate Domain** → copy URL  
+   (e.g. `https://billguard-api-production.up.railway.app`)
 
 Verify:
 
 ```bash
-curl https://YOUR-ACTUAL-RENDER-URL.onrender.com/health
+curl https://YOUR-RAILWAY-URL.up.railway.app/health
 # Must show: "service": "BillGuard", "database": "connected"
 ```
 
-> Free tier sleeps after 15 min idle — first load takes ~30s. Fine for Devpost judges.
+### 3. Connect Vercel to Railway
 
-### 3. Deploy frontend on Vercel
+1. [Vercel](https://vercel.com) → **billguard** → **Settings → Environment Variables**
+2. Set **`BILLGUARD_API_URL`** = your Railway URL (no trailing slash)
+3. **Deployments → Redeploy** production
 
-1. **Vercel** → your `billguard` project → **Settings** → **Environment Variables**  
-2. Add (Production):
-   - `BILLGUARD_API_URL` = your **actual** Render URL (from Render Settings → URL)
-3. **Deployments** → ⋯ on latest → **Redeploy** (required — env vars are baked in at build time)
+The frontend proxies via `/backend/api/...` — no CORS setup needed.
 
-The frontend calls `/backend/api/...` on Vercel, which proxies to Render (no CORS issues).
+### 4. Keep-alive for judges
 
-**Verify backend is FastAPI** (not Express):
-```bash
-curl https://billguard-api.onrender.com/health
-# Must show: "service": "BillGuard", "database": "connected"
-```
-If you see only `{"status":"ok"}` or `Cannot POST /api/...`, your Render service is wrong — see **Render fix** below.
+Set GitHub repo variable so the keep-alive workflow works:
 
-### 4. Seed demo data
+**GitHub repo → Settings → Secrets and variables → Actions → Variables → New:**
+- Name: `BILLGUARD_API_URL`
+- Value: `https://YOUR-RAILWAY-URL.up.railway.app`
+
+Workflow: [`.github/workflows/keep-warm.yml`](.github/workflows/keep-warm.yml) pings every 10 minutes.
+
+### 5. Seed demo data
 
 ```bash
 cd backend && python seed_demo.py
 ```
 
----
-
-## Path B: Google Cloud Run (hackathon GCP track)
-
-**Requires billing:** https://console.cloud.google.com/billing → Link project `gen-lang-client-0399705836`
-
----
-
-## 1. MongoDB Atlas (if not done)
-
-1. Create a free M0 cluster at [mongodb.com/atlas](https://www.mongodb.com/atlas)
-2. **Database Access** → create user with read/write
-3. **Network Access** → **Add IP Address** → **Allow Access from Anywhere** (`0.0.0.0/0`)  
-   Required for Cloud Run (IPs change per request)
-4. **Connect** → Drivers → copy connection string into `MONGODB_URI`
-
----
-
-## 2. Google Cloud — Backend on Cloud Run
-
-### Install gcloud
-
-```bash
-# macOS
-brew install google-cloud-sdk
-
-# Or: https://cloud.google.com/sdk/docs/install
-gcloud auth login
-gcloud auth application-default login
-```
-
-### Create project
-
-```bash
-export GCP_PROJECT_ID=your-hackathon-project-id
-gcloud projects create $GCP_PROJECT_ID   # skip if project exists
-gcloud config set project $GCP_PROJECT_ID
-```
-
-Enable billing on the project (Cloud Run free tier still needs a billing account linked).
-
-### Deploy
-
-```bash
-export MONGODB_URI="mongodb+srv://user:pass@cluster....mongodb.net/billguard?retryWrites=true&w=majority"
-export GEMINI_API_KEY="your_gemini_key"
-
-chmod +x scripts/deploy-backend.sh
-./scripts/deploy-backend.sh
-```
-
-Or manually:
-
-```bash
-cd backend
-gcloud run deploy billguard-api \
-  --source . \
-  --region us-central1 \
-  --allow-unauthenticated \
-  --port 8080 \
-  --memory 512Mi \
-  --timeout 300 \
-  --set-env-vars "MONGODB_URI=$MONGODB_URI,GEMINI_API_KEY=$GEMINI_API_KEY"
-```
-
-Copy the URL printed, e.g. `https://billguard-api-xxxxx-uc.a.run.app`
-
-Verify:
-
-```bash
-curl https://YOUR-BACKEND-URL/health
-# {"status":"ok","database":"connected",...}
-```
-
-### Seed demo data (optional, for judges)
-
-Run locally pointing at production Atlas:
-
-```bash
-cd backend
-# .env already has MONGODB_URI
-python seed_demo.py
-```
-
-Judges can load demo data in the browser:
+Judges can load demo data:
 
 ```javascript
 localStorage.setItem('billguard_session_id', 'demo_session');
 location.reload();
 ```
 
+### 6. Decommission Render (after Railway works)
+
+1. Verify Railway health + Vercel upload/chat work
+2. Render dashboard → **billguard-api** → **Delete**
+3. Remove old Render URL from any bookmarks
+
 ---
 
-## 3. Vercel — Frontend
+## Path B: Google Cloud Run (GCP hackathon track)
 
-### Option A: Vercel dashboard (easiest)
-
-1. Push repo to GitHub
-2. [vercel.com/new](https://vercel.com/new) → Import `billguard` repo
-3. **Root Directory**: `frontend`
-4. **Environment Variable**:
-   - `NEXT_PUBLIC_API_URL` = your Cloud Run URL (no trailing slash)
-5. Deploy
-
-### Option B: CLI
+Requires billing: https://console.cloud.google.com/billing
 
 ```bash
-export NEXT_PUBLIC_API_URL=https://billguard-api-xxxxx-uc.a.run.app
-chmod +x scripts/deploy-frontend.sh
-./scripts/deploy-frontend.sh
+export GCP_PROJECT_ID=your-project
+export MONGODB_URI="mongodb+srv://..."
+export GEMINI_API_KEY="..."
+./scripts/deploy-backend.sh
+```
+
+Set `BILLGUARD_API_URL` on Vercel to your Cloud Run URL.
+
+---
+
+## Path C: Render (legacy)
+
+See [`render.yaml`](render.yaml). Not recommended — use Railway instead.
+
+---
+
+## Vercel frontend (already deployed)
+
+- **Root Directory:** `frontend`
+- **Env var:** `BILLGUARD_API_URL` = Railway backend URL
+- **Live:** https://billguard-six.vercel.app
+
+CLI redeploy:
+
+```bash
+cd frontend
+printf 'https://YOUR-RAILWAY-URL.up.railway.app' | npx vercel env add BILLGUARD_API_URL production
+npx vercel --prod --yes
 ```
 
 ---
 
-## 4. Submission checklist
+## Verification checklist
 
-- [ ] Live app URL (Vercel frontend)
-- [ ] `/health` returns `database: connected`
-- [ ] Upload CSV works
+- [ ] `curl RAILWAY_URL/health` → `"service":"BillGuard","database":"connected"`
+- [ ] `curl billguard-six.vercel.app/backend/health` → same via proxy
+- [ ] CSV upload works on live site
 - [ ] Chat streams agent responses
 - [ ] Demo session works (`demo_session`)
-- [ ] GitHub repo is public
-- [ ] README mentions MongoDB + Gemini + Cloud Run
+- [ ] GitHub Action "Keep Backend Warm" runs successfully
 
 ---
 
 ## Troubleshooting
 
-### Render backend returns `Cannot POST /api/...` (Express error)
+### `BILLGUARD_API_URL not set on Vercel`
 
-Your Render service is **not running the FastAPI Docker image**. Fix:
+Add Railway URL in Vercel env vars and redeploy.
 
-1. Render dashboard → **billguard-api** → **Settings**
-2. Confirm **Runtime: Docker** and Dockerfile path = `backend/Dockerfile`, root = `backend`
-3. If it says Node/Python native → **delete service** and redeploy via Blueprint:  
-   https://dashboard.render.com/blueprint/new?repo=https://github.com/bigjosh112/billguard
-4. After deploy, `curl .../health` must return `"service": "BillGuard"`
+### Backend timeout / "Server is waking up"
 
-### `Failed to fetch` on Vercel
+- Wait for "Connecting to server…" banner to finish
+- Upload/chat auto-retry up to 4 times
+- Open site 1–2 min before demo, or use demo mode
 
-1. Set `NEXT_PUBLIC_API_URL` on Vercel to your Render URL
-2. Set `NEXT_PUBLIC_API_PROXY=1`
-3. **Redeploy** Vercel (env vars only apply after rebuild)
-4. Render free tier sleeps — first request after idle takes ~30s
+### `MongoDB startup failed`
 
-### `MongoDB startup failed` / DNS timeout locally
-
-Your network DNS (`192.168.x.x`) may block Atlas SRV lookups. Fixes:
-
-- Switch to mobile hotspot or different Wi‑Fi
-- Use Google DNS: System Settings → Network → DNS → `8.8.8.8`, `8.8.4.4`
-- Cloud Run does not have this issue once Atlas allows `0.0.0.0/0`
-
-### CORS errors
-
-Backend already allows all origins (`allow_origins=["*"]`). If issues persist, confirm `NEXT_PUBLIC_API_URL` has no trailing slash and uses `https://`.
+Atlas → Network Access → allow `0.0.0.0/0`. Check `MONGODB_URI` on Railway.
 
 ### Gemini 429 quota
 
-Agent falls back to rule-based responses when Gemini is rate-limited. For demo, that still works. Add a fresh API key for full AI.
-
-### Cloud Run cold start
-
-First request after idle may take 3–5s. Set `--min-instances 1` if demo timing is critical (small cost).
+Agent falls back to rule-based responses. Add fresh API key for full AI.
 
 ---
 
-## Architecture (production)
+## Architecture
 
 ```
-User → Vercel (Next.js)
-         ↓  NEXT_PUBLIC_API_URL
-    Cloud Run (FastAPI + Agent)
+User → Vercel (billguard-six.vercel.app)
+         ↓  /backend/* proxy
+    Railway (FastAPI + Agent)
          ↓
-    MongoDB Atlas
-    Gemini API
+    MongoDB Atlas + Gemini API
 ```
 
 ---
 
-## Keep backend awake for judges (important)
+## Devpost demo tip
 
-Render **free tier sleeps after 15 minutes**. Three layers prevent cold-start timeouts:
+Lead with **demo mode** — no upload, no cold start:
 
-### 1. Automatic keep-alive (already set up)
-GitHub Action pings your API **every 10 minutes**:
-`.github/workflows/keep-warm.yml`
-
-Check it runs: GitHub repo → **Actions** → "Keep Render Warm" → enable if paused.
-
-### 2. Wake on page load
-When a judge opens the site, a **"Starting server…"** banner appears while the backend wakes (up to ~60s). No action needed.
-
-### 3. Before your live demo
-Open **https://billguard-six.vercel.app** 1–2 minutes before presenting.  
-Or run:
-```bash
-curl https://billguard-api-gjxg.onrender.com/health
-```
-
-### Optional: Render paid ($7/mo)
-Render → billguard-api → **Upgrade to Starter** = always on, zero cold starts.
-
-### Devpost demo tip
-Tell judges to use **demo mode** (no upload needed):
 ```javascript
 localStorage.setItem('billguard_session_id', 'demo_session');
 location.reload();
 ```
 
----
+Then ask: *"I have ₦20,000. Help me sort my bills from my ₦530,000 salary"*
